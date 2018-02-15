@@ -21,21 +21,16 @@ private:
 	};
 	Snake m_player;
 	float m_counter;
+	bool m_alive;
+	int m_score;
 
-protected:
-	virtual bool onCreate()
-	{
-		m_counter = 0;
-		m_player.x = 15;
-		m_player.y = 15;
-		m_player.speed = 5;
-		m_player.direction = 0;
-		m_player.body = { {m_player.x, m_player.y}, {m_player.x - 1, m_player.y}, {m_player.x - 2, m_player.y} };
-		return true;
+	void dead(Input t_input) {
+		if (t_input.getKey(VK_SPACE).m_pressed) {
+			onCreate();
+		}
 	}
 
-	virtual bool onUpdate(Input t_input, float t_elapsedTime)
-	{
+	void alive(Input t_input, float t_elapsedTime) {
 		if (m_counter > 1) {
 			// Player movement
 			if (m_player.direction == 0) {
@@ -73,6 +68,47 @@ protected:
 		else if (t_input.getKey('D').m_pressed && m_player.direction != 2) {
 			m_player.direction = 0;
 		}
+	}
+
+protected:
+	virtual bool onCreate()
+	{
+		m_score = 0;
+		m_alive = true;
+		m_counter = 0;
+		m_player.x = 15;
+		m_player.y = 15;
+		m_player.speed = 5;
+		m_player.direction = 0;
+		m_player.body = { {m_player.x, m_player.y}, {m_player.x - 1, m_player.y}, {m_player.x - 2, m_player.y}, { m_player.x - 3, m_player.y }, { m_player.x - 4, m_player.y } };
+		return true;
+	}
+
+	virtual bool onUpdate(Input t_input, float t_elapsedTime)
+	{
+		// Out of bounds collision
+		if (m_player.x > 30 || m_player.x < 0 || m_player.y > 30 || m_player.y < 0) {
+			if (m_alive) {
+				m_alive = false;
+			}
+		}
+		// Body collision
+		else {
+			for (int i = 1; i < m_player.body.size(); i++) {
+				if (m_player.x == m_player.body[i].first && m_player.y == m_player.body[i].second) {
+					if (m_alive) {
+						m_alive = false;
+					}
+				}
+			}
+		}
+
+		if (m_alive) {
+			alive(t_input, t_elapsedTime);
+		}
+		else {
+			dead(t_input);
+		}
 
 		return true;
 	}
@@ -80,8 +116,15 @@ protected:
 	virtual bool onRender(Graphics t_graphics)
 	{
 		t_graphics.Clear();
-		for (int i = 0; i < m_player.body.size(); i++) {
-			t_graphics.Draw(m_player.body[i].first, m_player.body[i].second);
+		if (m_alive) {
+			for (int i = 0; i < m_player.body.size(); i++) {
+				t_graphics.Draw(m_player.body[i].first, m_player.body[i].second);
+			}
+		}
+		else {
+			t_graphics.DrawString(10, 5, "You Died!");
+			t_graphics.DrawString(10, 7, "Score: " + std::to_string(m_score));
+			t_graphics.DrawString(3, 9, "Press Space To Try Again");
 		}
 		return true;
 	}
